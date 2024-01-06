@@ -5,6 +5,8 @@ const featureMap = new Map([
     ['adj.','adjective'],
     ['v.r.','verb'],
     ['v.','verb'],
+    ['p.n.','noun'],
+    ['r.n.','noun'],
     ['n.','noun'],
     ['m.','noun'],
     ['f.','noun'],
@@ -38,10 +40,10 @@ const readfiles = arr => {
         const doc = parser.parseFromString(str,'text/xml');
         const words = [...doc.querySelectorAll('standOff[type="wordsplit"] > entry')].map(el => {
             const simple = el.querySelector('form[type="simple"]');
-            if(simple) return simple.textContent.replaceAll('*','u').split('-');
+            if(simple) return simple.textContent.replaceAll(/[*’]/g,'u').split('-');
             const form = el.querySelector('form').cloneNode(true);
             for(const pc of form.querySelectorAll('pc, note')) pc.remove();
-            return form.textContent.replace(/-um$/,'').replaceAll('*','u').split('-');
+            return form.textContent.replace(/-um$/,'').replaceAll(/[*’]/g,'u').split('-');
         }).flat().filter(f => f !== '');
         
         const findfn = (word) => index.find(e => e[0] === word);

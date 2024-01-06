@@ -4,9 +4,91 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kuṟuntokai collocations</title>
-    <script type="module" crossorigin src="./assets/index-pD2zWUyz.js"></script>
+    <style>
+        body {
+            margin: 0;
+            background: rgba(0,0,0,0.9);
+            color: white;
+        }
+        #loading {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+            z-index: -10;
+        }
+        #dropdown {
+            position: absolute;
+            width: 100%;
+            top: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        #panel {
+            display: none;
+            flex-direction: row;
+            background: rgba(255,255,255,0.3);
+            color: white;
+            padding-top: 0.3rem;
+        }
+        #panellegend {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+        #panellegend > div {
+            margin-left: 0.3rem;
+            margin-right: 0.3rem;
+            margin-top: -7px;
+        }
+        #panellegend > div#solonodes {
+            margin-top: 0;
+           /* margin-left: auto; */
+        }
+        #panelform {
+            margin-left: auto;
+            margin-right: 0.3rem;
+            padding-bottom: 0.3rem;
+            display: flex;
+            flex-wrap: wrap;
+        }
+        #npmi {
+            width: 4rem;
+        }
+        #paneltoggle {
+            margin-left: auto;
+            padding: 0.3rem;
+            background: rgba(255,255,255,0.3);
+            color: white;
+            border-radius: 0 0 15% 15%;
+            cursor: pointer;
+        }
+        #graphupdate {
+            margin-left: 1rem;
+        }
+    </style>
+    <script type="module" crossorigin src="./assets/index-vu0ICBoW.js"></script>
   </head>
-  <body style="margin:0">
+  <body>
+    <div id="loading">
+        <div>Loading...</div>
+    </div>
     <div id="colgraph"></div>
+    <div id="dropdown">
+        <div id="panel">
+            <span id="panellegend"></span>
+            <span id="panelform">
+                <span>
+                    <label>min. <abbr title="Normalized Pointwise Mutual Information">NPMI</abbr></label>
+                    <input type="number" id="npmi" min="0" max="1" value="0.45" step="0.05" autocomplete="off"/>
+                </span>
+                <button id="graphupdate">Update</button>
+            </span>
+        </div>
+        <div id="paneltoggle">⇩</div>
+    </div>
   </body>
 </html>
