@@ -1,4 +1,5 @@
 import Fs from 'fs';
+import Path from 'path';
 import Jsdom from 'jsdom';
 
 const featureMap = new Map([
@@ -35,6 +36,7 @@ const readfiles = arr => {
 
     for(const fname of arr) {
         const str = Fs.readFileSync(fname,{encoding: 'utf-8'});
+        const poemnum = Path.basename(fname,'.xml');
         const dom = new Jsdom.JSDOM('');
         const parser = new dom.window.DOMParser();
         const doc = parser.parseFromString(str,'text/xml');
@@ -52,62 +54,71 @@ const readfiles = arr => {
             //const found = index.find(e => e[0] === words[n]);
             if(found) {
                 if(found[1].fromlemma && found[1].fromlemma !== '')
-                    words[n] = found[1].fromlemma;
+                    words[n] = found[1].fromlemma.trim();
             }
         }
 
         wordtotal = wordtotal + words.length;
-        appendNgrams(words,2,twograms);
-        appendNgrams(words,2,twograms,1);
-        appendNgrams(words,1,onegrams);
+        appendNgrams(words,2,twograms,0,poemnum);
+        appendNgrams(words,2,twograms,1,poemnum);
+        appendNgrams(words,1,onegrams,0,poemnum);
     }
 
     const npmi = new Map();
-    for(const [gram,freq] of twograms) {
-        if(freq === 1) continue;
-        const [xcount,ycount] = gram.split(' ').map(g => onegrams.get(g));
-        if(xcount === 1 || ycount === 1) continue;
+    for(const [gram,obj] of twograms) {
+        const freq = obj.count;
+        if(freq === 1) continue; // include hapaxes?
+        const [xcount,ycount] = gram.split(' ').map(g => onegrams.get(g).count);
+        //if(xcount === 1 || ycount === 1) continue; // include hapaxes?
         const [px,py] = [xcount/wordtotal,ycount/wordtotal];
         const pxy = freq/wordtotal;
-        npmi.set(gram, Math.log(pxy/(px * py)) / (0 - Math.log(pxy)));
+        npmi.set(gram, Math.log(pxy/(px * py)) / (-Math.log(pxy)));
         //npmi.set(gram, Math.log(pxy**2/(px * py)));
     }
-    const nodes = [...onegrams].toSorted((a,b) => b[1] - a[1])
+    const nodes = [...onegrams].toSorted((a,b) => b[1] > a[1] ? -1 : 1)
                                .map(c => {
                                  const found = index.find(e => e[1].islemma === c[0]);
-                                 if(!found) return {id: c[0].trim(), size: c[1]};
+                                 if(!found) return {id: c[0], size: c[1].count};
                                  
                                  const features = found[1].features;
                                  for(const feature of features) {
                                     if(featureMap.has(feature))
-                                        return {id: c[0].trim(), size: c[1], type: featureMap.get(feature)};
+                                        return {id: c[0], size: c[1].count, type: featureMap.get(feature)};
                                  }
                                  
-                                 return {id: c[0].trim(), size: c[1]};
+                                 return {id: c[0], size: c[1].count};
                                 });
     /*
     const out2 = [...twograms].toSorted((a,b) => b[1] - a[1])
                              .map(c => `${c[0]},${c[1]}`)
                              .join('\n');
     */
-    const links = [...npmi].toSorted((a,b) => b[1] - a[1])
-                             .map(c => {
+    const links = [...npmi].toSorted((a,b) => b[1] > a[1] ? -1 : 1)
+                           .map(c => {
                                  const split = c[0].split(/\s+/);
-                                 return {
+                                 const ret = {
                                     id: c[0],
                                     source: split[0],
                                     target: split[1],
-                                    strength: c[1]
+                                    strength: c[1],
+                                    citations: [...twograms.get(c[0]).citations].toSorted((a,b) => a.replaceAll(/\D/g,'') < b.replaceAll(/\D/g,'') ? -1 : 1)
                                  };
+                                 if(split[0] === split[1])
+                                     ret.curvature = 0.5;
+                                 else if(npmi.has(`${split[1]} ${split[0]}`))
+                                     ret.curvature = 0.25;
+                                 return ret;
                              });
 
     //Fs.writeFileSync('1grams.csv',out1);
     //Fs.writeFileSync('2grams.csv',out2);
     //Fs.writeFileSync('npmi.csv',out3);
     Fs.writeFileSync('collocations.json',JSON.stringify({nodes: nodes, links: links}));
+    console.log(`nodes: ${nodes.length}`);
+    console.log(`links: ${links.length}`);
 };
 
-const appendNgrams = (arr, n, collated,skip=0) => {
+const appendNgrams = (arr, n, collated, skip, poemnum) => {
     n = parseInt(n);
     const grams = [];
     for(let i=0; i < arr.length - n - skip - 1; i++) {
@@ -116,10 +127,12 @@ const appendNgrams = (arr, n, collated,skip=0) => {
             sub.push(arr[j]);
         const gram = sub.join(' ');
         const inmap = collated.get(gram);
-        if(inmap)
-            collated.set(gram,inmap + 1);
+        if(inmap) {
+            inmap.count = inmap.count + 1;
+            inmap.citations.add(poemnum);
+        }
         else
-            collated.set(gram,1);
+            collated.set(gram,{count: 1, citations: new Set([poemnum])});
     }
 };
 

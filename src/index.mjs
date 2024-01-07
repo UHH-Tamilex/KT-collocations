@@ -37,7 +37,7 @@ const makeGraph = () => {
 
     colgraph(document.getElementById('colgraph'))
         .graphData({nodes: collocations.nodes, links: newlinks})
-        //.nodeLabel(n => n.id)
+        .nodeLabel(n => `${n.size} occurences`)
         .nodeThreeObject(n => {
             const sprite = new SpriteText(n.id);
             sprite.material.depthWrite = false;
@@ -50,7 +50,13 @@ const makeGraph = () => {
         .linkWidth(l => l.strength*5)
         .linkOpacity(0.3)
         .linkDirectionalArrowLength(5)
+        .linkCurvature(l => l.curvature || 0)
+        .linkLabel(l => `${l.citations.join(', ')} (NPMI: ${l.strength.toPrecision(4)})`)
         .onNodeClick(focusNode);
+    
+
+    colgraph.d3Force('link')
+            .distance(l => 40/l.strength);
 };
 
 const togglePanel = (e) => {
