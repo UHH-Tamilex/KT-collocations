@@ -3,6 +3,8 @@ import SpriteText from 'three-spritetext';
 
 import collocations from './collocations.json';
 
+const colgraph = ForceGraph3D();
+
 const focusNode = node => {
           // Aim at node from outside it
           const distance = 200;
@@ -18,8 +20,6 @@ const focusNode = node => {
             1000  // ms transition duration
         );
 };
-
-const colgraph = ForceGraph3D();
 
 const makeGraph = () => {
     const colours = new Map([
@@ -57,6 +57,10 @@ const makeGraph = () => {
 
     colgraph.d3Force('link')
             .distance(l => 40/l.strength);
+
+    const params = new URLSearchParams(window.location.search);
+    if(params.get('demo') === 'true')
+        demoMode();
 };
 
 const togglePanel = (e) => {
@@ -112,6 +116,32 @@ const updateGraph = () => {
 
 
     colgraph.graphData(colclone);
+};
+
+const demoMode = () => {
+    let angle = 0;
+    let focustimer = 0;
+    let dist = 1400;
+    const demoId = setInterval(() => {
+        if(focustimer === 0 && Math.random() < 0.1) {
+            const nodes = colgraph.graphData().nodes;
+            const random = Math.floor(Math.random() * nodes.length);
+            focustimer = 10;
+            focusNode(nodes[random]);
+            dist = 200;
+        }
+        else {
+            if(focustimer > 0) focustimer = focustimer + 10;
+            if(focustimer === 1200) focustimer = 0;
+            colgraph.cameraPosition({
+                x: dist * Math.sin(angle),
+                z: dist * Math.cos(angle)
+            });
+            angle += Math.PI / 300;
+        }
+    }, 10);
+
+    return demoId;
 };
 
 document.getElementById('paneltoggle').addEventListener('click',togglePanel);
