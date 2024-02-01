@@ -132,7 +132,7 @@ const demoMode = () => {
         }
         else {
             if(focustimer > 0) focustimer = focustimer + 10;
-            if(focustimer === 1200) focustimer = 0;
+            if(focustimer === 1300) focustimer = 0;
             colgraph.cameraPosition({
                 x: dist * Math.sin(angle),
                 z: dist * Math.cos(angle)
